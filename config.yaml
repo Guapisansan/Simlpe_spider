@@ -1,0 +1,24 @@
+local:
+  mysql:
+    host: '127.0.0.1'
+    port: '3306'
+    user: 'root'
+    password: '123456'
+  redis:
+    host: '127.0.0.1'
+  rabbitmq:
+    host: ''
+  kafka:
+    host: ''
+server:
+  mysql:
+    host: '10.0.1.16'
+    port: '3306'
+    user: 'root'
+    password: '123456'
+  redis:
+    host: '10.0.1.16'
+  rabbitmq:
+    host: ''
+  kafka:
+    host: ''
