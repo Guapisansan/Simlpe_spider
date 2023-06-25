@@ -16,6 +16,7 @@ server:
     port: '3306'
     user: 'root'
     password: '123456'
+    databases: 'test'
   redis:
     host: '10.0.1.16'
   rabbitmq:
