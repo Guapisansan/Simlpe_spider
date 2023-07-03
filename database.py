@@ -21,3 +21,6 @@ engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_recycle=3600, pool_size=0, 
 # 创建DBSession类型:
 SessionLocal = sessionmaker(autocommit=False, autoflush=True, bind=engine)
 Base = declarative_base()
+
+# 生成models.py 将下面的命令复制到终端执行,mysql库中所有表中的字段类型会自动映射到models.py中
+# sqlacodegen mysql+pymysql://{mysql_config_dict.get("user")}:{mysql_config_dict.get("password")}@{mysql_config_dict.get("host")}:{mysql_config_dict.get("port")}/{mysql_config_dict.get("databases")}  --outfile "models.py"

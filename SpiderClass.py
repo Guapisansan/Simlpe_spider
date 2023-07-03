@@ -81,6 +81,7 @@ def requests_decorator(function):
                 logger.error('requests.exceptions.ReadTimeout')
             else:
                 logger.error(traceback.format_exc())
+                logger.error("未知异常请查看堆栈信息")
                 return False
             if callback_queue:
                 callback_queue.sadd(queue_data)

@@ -15,7 +15,7 @@ from  database import SessionLocal
 from RedisQueueClass import RedisQueue
 from setting import *
 
-logger.add(os.path.join(rootPath, "log_folder", os.path.split(__file__)[-1] + ".log"), retention='7 days', level="WARNING")
+logger.add(os.path.join(rootPath, "log_folder", os.path.split(__file__)[-1] + ".log"), retention='7 days')
 
 details_page_queue = RedisQueue("details_page_queue")
 
@@ -87,6 +87,7 @@ class BaiDuHotSearch(SpiderClass):
                     "detail_href": detail_href
                 }
                 details_page_queue.sadd(detail_dict)
+                logger.info("详情页入队列： {}".format(detail_dict))
 
 
 if __name__ == '__main__':
