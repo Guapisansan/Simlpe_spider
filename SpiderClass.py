@@ -32,7 +32,7 @@ def is_retry(queue_data, number):
         queue_data["retry_count"] = number
         return queue_data
     if queue_data.get("retry_count") == 0:
-        # 发飞书
+        # 发飞书、钉钉、邮件等通知
         warning = "以重试5次请求失败: " + json.dumps(queue_data)
         logger.warning(warning)
         return False
