@@ -91,74 +91,6 @@ def requests_decorator(function):
     return inner
 
 
-def requests_decorator_gpt(function):
-    def inner(*args, queue_data=None, callback_queue=None, isRetry=None, **kwargs):
-        """
-        请求装饰器： 用于处理异常，回调，重试等机制
-        :param callback_queue: RedisQueue队列名称
-        :param queue_data: dict 重新插入队列
-        :param isRetry: 是否重试
-        """
-
-        def log_error(message):
-            logger.error(message)
-
-        try:
-            response = function(*args, **kwargs)
-            if response.status_code == 200:
-                return response
-            if response.status_code == 404:
-                return False
-
-            log_error("Request failed 响应码为{} {}，查看ip是否可以正常访问".format(response.status_code, response.url))
-            if callback_queue:
-                # 重试机制
-                if isRetry is not None:
-                    queue_data = is_retry(queue_data, 5)
-                    if queue_data is False:
-                        return False
-
-                if response.status_code != 451:
-                    time.sleep(300)
-                    log_error("状态码异常： 等待300秒")
-
-                callback_queue.sadd(queue_data)
-
-            return False
-
-        except requests.exceptions.InvalidSchema:
-            log_error("requests.exceptions.InvalidSchema为 {}".format(kwargs.get("request_url")))
-
-        except requests.exceptions.InvalidURL:
-            log_error("requests.exceptions.InvalidURL: {}".format(kwargs.get("request_url")))
-
-        except TypeError:
-            log_error(traceback.format_exc())
-
-        except requests.exceptions.ReadTimeout:
-            log_error('requests.exceptions.ReadTimeout')
-            if callback_queue:
-                callback_queue.sadd(queue_data)
-            time.sleep(30)
-            return False
-
-        except requests.exceptions.ConnectTimeout:
-            log_error('requests.exceptions.ReadTimeout')
-            if callback_queue:
-                callback_queue.sadd(queue_data)
-            time.sleep(30)
-            return False
-
-        except Exception:
-            log_error(traceback.format_exc())
-            if callback_queue:
-                callback_queue.sadd(queue_data)
-            time.sleep(30)
-            return False
-
-    return inner
-
-
 class SpiderClass(ABC, ThreadClass):
     """
     继承ThreadClass类，实现多线程爬虫类，里面包括了定时任务，解析列表页，解析详情页，请求方法
@@ -416,40 +348,37 @@ class AsyncSpider:
     异步爬虫
     """
 
-    def __init__(self, urls, max_concurrency=10, retries=3, timeout=30):
-        self.urls = urls
-        self.max_concurrency = max_concurrency
-        self.retries = retries
-        self.timeout = timeout
-        self.failed_urls = []
+    def __init__(self):
+        pass
 
-    async def fetch(self, session, url):
-        retries = self.retries
-        while retries > 0:
-            try:
-                async with session.get(url, timeout=self.timeout) as response:
-                    if response.status == 200:
-                        return await response.text()
-                    else:
-                        retries -= 1
-                        await asyncio.sleep(5)
-            except (aiohttp.ClientError, asyncio.TimeoutError):
-                retries -= 1
-                await asyncio.sleep(5)
-        self.failed_urls.append(url)
-        return None
+    def load_asyncio_task(self, urls, call_back_func=None):
+        """
+        加载任务
+        :param urls: 任务列表
+        :return:
+        """
+        tasks = []  # 把所有任务放到一个列表中
+        for url in urls:
+            t = self.get_requset(url)
+            task = asyncio.ensure_future(t)
+            if call_back_func:
+                task.add_done_callback(call_back_func)
+            tasks.append(task)
+        return tasks
 
-    async def run(self):
+    async def get_requset(self, url):
         async with aiohttp.ClientSession() as session:
-            tasks = []
-            semaphore = asyncio.Semaphore(self.max_concurrency)
-            for url in self.urls:
-                async with semaphore:
-                    tasks.append(asyncio.ensure_future(self.fetch(session, url)))
-            responses = await asyncio.gather(*tasks)
-            for response in responses:
-                if response:
-                    print(response)
-            if self.failed_urls:
-                print(f"Failed URLs: {self.failed_urls}")
+            async with await session.get(url) as response:
+                return await response.text()
+
+
+    def run_asyncio(self, tasks):
+        """
+        执行异步任务
+        :param tasks: 任务列表
+        :return:
+        """
+        loop = asyncio.get_event_loop()  # 创建一个事件循环对象loop
+        loop.run_until_complete(asyncio.wait(tasks))  # 完成事件循环，直到最后一个任务结束
+        loop.close()  # 关闭事件循环
 
